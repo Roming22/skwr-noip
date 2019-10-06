@@ -1,0 +1,37 @@
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: no-ip
+  labels:
+    app: no-ip
+  namespace: kube-system
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          labels:
+            app: no-ip
+        spec:
+          containers:
+            - image: k3d-registry.localhost:5000/skwr/kube-system/no-ip
+              name: no-ip
+              env:
+                - name: NOIP_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: no-ip
+                      key: NOIP_PASSWORD
+                - name: NOIP_EMAIL
+                  valueFrom:
+                    secretKeyRef:
+                      name: no-ip
+                      key: NOIP_EMAIL
+              envFrom:
+                - configMapRef:
+                    name: no-ip.env
+          restartPolicy: Never

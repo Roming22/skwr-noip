@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+data:
+  DEBUG: "0"
+  NOIP_DOMAINS: $NOIP_DOMAINS
+kind: ConfigMap
+metadata:
+  name: no-ip.env
+  labels:
+    app: no-ip
+  namespace: kube-system
