@@ -1,4 +1,6 @@
 #!/bin/bash
 
-# Modify this file to test that the container is providing the expected service.
-true || exit $?
+PROJECT_DIR=$(cd $(dirname $0)/..; pwd)
+
+RESPONSE=$(cat /tmp/response.txt)
+[[ "$RESPONSE" =~ ^(good|nochg) ]] || exit 1

@@ -1,27 +1,14 @@
-# Template for a [SKWR](https://github.com/Roming22/skwr) module
+# Dynamic DNS service for [SKWR](https://github.com/Roming22/skwr)
 
-## image/
+## Goal
 
-* `Dockerfile`: Used to create the container image.
-* `module`: This folder shoud contain a `bin` directory with a `run.sh` script that starts the service to be run by the container. Any static data should be under this directory as well.
-* `module/bin/run.sh`: Default entrypoint.
-* `module/bin/healthcheck.sh`: Default health check.
+Update external IP by targeting noip.com
 
-## etc/
+## Configuration
 
-This directory holds the configuration of the systemd service as well as some of the docker options to be used when starting the container.
+Run `configure.sh` to create the secret holding your configuration.
+The domains are your hostname, group name, or a comma-delimited list of a mix of them.
 
-### service.cfg
+## Credits
 
-* `DESCRIPTION`: The description of the systemd service.
-* `DOCKER_NETWORK`: By default each container is on its own network to isolate it. If multiple containers need to be connected together, set the DOCKER_NETWORK to a common value.
-* `DOCKER_OPTIONS`: Additional docker options.
-
-### *.env
-
-Any `*.env` file in this directory will be automatically loaded when the container is started.
-
-
-## volumes/
-
-* `config`: Configuration of the volumes to be mounted in the container. The format is `source/path/from/volumes:/target/path/in/container[:ro]`.
+Based on https://github.com/cwmyers/rpi-docker-no-ip
