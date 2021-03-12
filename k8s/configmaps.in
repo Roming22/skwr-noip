@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+data:
+  NOIP_DOMAINS: $NOIP_DOMAINS
+  INTERVAL: $INTERVAL
+kind: ConfigMap
+metadata:
+  name: no-ip.env
+  labels:
+    app: no-ip
+  namespace: www

@@ -1,42 +1,84 @@
 #!/bin/bash
-SCRIPT_DIR=`cd $(dirname $0); pwd`
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
-SECRET="$SCRIPT_DIR/etc/secret.env"
-[[ -e "$SECRET" ]] && source <(sed -e 's:=:=":' -e 's:$:":' $SECRET)
+DEFAULT="${SCRIPT_DIR}/k8s/config.default"
+SECRET="${SCRIPT_DIR}/k8s/config.secret"
+for CONFIG in "${DEFAULT}" "${SECRET}"; do
+	[[ -e "${CONFIG}" ]] && source "${CONFIG}"
+done
+unset CONFIG
 
-set_mandatory_value(){
-	PROMPT=$2
-	VAR=$1
+ask(){
+	local TYPE="$1"
+	local MODE="$2"
+	local VAR="$3"
+	local PROMPT="$4"
+
+	local DEFAULT
+	local PAD
+	local INPUT
+	local READ_ARGS
+
 	[[ -n "${!VAR}" ]] && DEFAULT="${!VAR}" || unset DEFAULT
-	read -p "$PROMPT`[[ -n "$DEFAULT" ]] && echo -e " [$DEFAULT]"`: " INPUT
-	export $VAR="${INPUT:-$DEFAULT}"
-	[[ -z "${!VAR}" ]] && echo "Invalid value: Do not leave blank" && exit 1
-	VAR_LIST="$VAR_LIST $VAR"
-	unset INPUT
-}
 
-set_mandatory_password(){
-	VAR=$1
-	PROMPT=$2
-	[[ -n "${!VAR}" ]] && DEFAULT="${!VAR}" || unset DEFAULT
-	read -s -p "$PROMPT`[[ -n "$DEFAULT" ]] && echo -e " [leave blank to keep the current value]"`: " INPUT
-	echo
+	case "$TYPE" in
+		value)
+			PROMPT="${PROMPT}$([[ -n "${DEFAULT}" ]] && echo -e " [${DEFAULT}]")"
+			;;
+		secret)
+			READ_ARGS="-s"
+			PROMPT="${PROMPT}$([[ -n "${DEFAULT}" ]] && echo -e " [press enter to use existing value]")"
+			;;
+		*)
+			echo "Unsupported type: $TYPE" >&2
+			exit 1
+			;;
+	esac
+	case "$MODE" in
+		mandatory) ;;
+		optional)
+			PAD="-"
+			;;
+		*)
+			echo "Unsupported mode: $MODE" >&2
+			exit 1
+			;;
+	esac
+
+	read ${READ_ARGS} -p "${PROMPT}: " INPUT
+
+	case "$TYPE" in
+		secret)
+			echo
+			INPUT="$( echo -n "${INPUT}" | base64  | tr -d '\n' )"
+			;;
+	esac
 	export $VAR="${INPUT:-$DEFAULT}"
-	[[ -z "${!VAR}" ]] && echo "Invalid value: Do not leave blank" && exit 1
-	VAR_LIST="$VAR_LIST $VAR"
-	unset INPUT
+	[[ -z "${!VAR}${PAD}" ]] && echo "Invalid value: Do not leave blank" && exit 1
+	VAR_LIST="${VAR_LIST} ${VAR}"
 }
 
 write_secret(){
-	VAR_LIST=( $VAR_LIST )
-	for VAR in ${VAR_LIST[@]}; do
-		echo "$VAR=${!VAR}"
-	done > $SECRET
+    VAR_LIST=( $VAR_LIST )
+    for VAR in ${VAR_LIST[@]}; do
+        echo "$VAR=${!VAR}"
+    done > $SECRET
 }
 
-set_mandatory_value NOIP_DOMAINS "Enter the domains"
-set_mandatory_value NOIP_EMAIL "Enter the email account"
-set_mandatory_password NOIP_PASSWORD "Enter the password"
-set_mandatory_value INTERVAL "Enter the refresh interval, e.g. 10m, 1h, 1d (must be at least 5 minutes)"
+create_secret(){
+	ask secret mandatory NOIP_EMAIL "Email address registered on the noip account"
+	ask secret mandatory NOIP_PASSWORD "Password of the noip account"
+	ask value mandatory NOIP_DOMAINS "Your hostname, group name, or a comma-delimited list of a mix of them"
+	ask value mandatory INTERVAL "Update interval (e.g. 10m, 1h, 7d). Minimum is 5m"
+	write_secret
+}
 
-write_secret
+process_templates(){
+	for TEMPLATE in $(find "${SCRIPT_DIR}/k8s" -name \*.in); do
+		TARGET="$(echo "${TEMPLATE}" | sed "s:in$:yml.secret:")"
+		envsubst < $TEMPLATE > $TARGET
+	done
+}
+
+create_secret
+process_templates

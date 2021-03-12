@@ -4,7 +4,7 @@ PROJECT_DIR=$(cd $(dirname $0)/..; pwd)
 
 if [[ -z "$NOIP_EMAIL" || -z "$NOIP_PASSWORD" || -z "$NOIP_DOMAINS" ]]; then
 	echo "[ERROR] Configuration is incorrect.
-run `configure.sh` on the module.
+run 'configure.sh' on the module.
 "
 	# Prevent the service to crash and loop continuously
 	sleep 300
@@ -44,10 +44,9 @@ function log {
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Let SKWR know that the container is up and running
 echo "[`hostname -s`] Started"
 while true; do
-	RESPONSE=$(curl -S -s -k --user-agent "${USER_AGENT}" -u "${NOIP_EMAIL}:${NOIP_PASSWORD}" "https://dynupdate.no-ip.com/nic/update?hostname=${NOIP_DOMAINS}" 2>&1 | tr -d [:cntrl:])
+	RESPONSE=$(curl -S -s --user-agent "${USER_AGENT}" -u "${NOIP_EMAIL}:${NOIP_PASSWORD}" "https://dynupdate.no-ip.com/nic/update?hostname=${NOIP_DOMAINS}" 2>&1 | tr -d [:cntrl:])
 	# Used by the healthcheck
 	rm $RESPONSE_FILE 2>/dev/null
 	echo "$RESPONSE" > $RESPONSE_FILE
