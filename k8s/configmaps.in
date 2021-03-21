@@ -1,8 +1,9 @@
 ---
 apiVersion: v1
 data:
-  NOIP_DOMAINS: $NOIP_DOMAINS
+  DEBUG: "0"
   INTERVAL: $INTERVAL
+  NOIP_DOMAINS: $NOIP_DOMAINS
 kind: ConfigMap
 metadata:
   name: no-ip.env
